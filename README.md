@@ -1,2 +1,12 @@
-# Personal-finance-manager
-Full-stack personal finance manager built with React, Node.js, Express, Prisma, and PostgreSQL.
+# Personal Finance Manager
+
+A full-stack web application for managing transactions, budgets, savings goals, and financial reports.
+
+## Tech Stack
+
+- React
+- Node.js
+- Express.js
+- Prisma
+- PostgreSQL
+- Tailwind CSS
