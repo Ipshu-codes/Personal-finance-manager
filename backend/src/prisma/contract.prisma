@@ -1,0 +1,40 @@
+// use prisma-8
+model User {
+  id           Int                        @id @default(autoincrement())
+  name         String
+  email        String                     @unique
+  passwordHash String
+  createdAt    TimestamptzString          @default(now())
+  updatedAt    temporal.updatedAtString()
+
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+model Transaction {
+  id          Int               @id @default(autoincrement())
+  amount      Decimal
+  type        TransactionType
+  category    String
+  description String?
+  date        TimestamptzString @default(now())
+
+  userId      Int
+  user        User              @relation(fields: [userId], references: [id])
+}
+
+model Budget {
+  id       Int     @id @default(autoincrement())
+  category String
+  amount   Decimal
+  month    Int
+  year     Int
+
+  userId   Int
+  user     User    @relation(fields: [userId], references: [id])
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
