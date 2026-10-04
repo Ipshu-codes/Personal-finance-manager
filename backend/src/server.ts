@@ -28,6 +28,39 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+app.post('/api/transactions', async (req, res) => {
+  try {
+    const {
+      amount,
+      type,
+      category,
+      description,
+      date,
+      userId
+    } = req.body;
+
+    const transaction = await db.orm.public.Transaction
+      .create({
+        amount,
+        type,
+        category,
+        description,
+        date,
+        userId
+      });
+
+    res.status(201).json({
+      message: 'Transaction created successfully',
+      transaction
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to create transaction'
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
