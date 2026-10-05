@@ -60,7 +60,23 @@ app.post('/api/transactions', async (req, res) => {
     });
   }
 });
+app.get('/api/transactions', async (req, res) => {
+  try {
+    const transactions = await db.orm.public.Transaction
+      .where({})
+      .all();
 
+    res.json({
+      message: 'Transactions fetched successfully',
+      transactions
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to fetch transactions'
+    });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
