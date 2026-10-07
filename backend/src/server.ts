@@ -77,6 +77,60 @@ app.get('/api/transactions', async (req, res) => {
     });
   }
 });
+app.put('/api/transactions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      amount,
+      type,
+      category,
+      description,
+      date,
+      userId
+    } = req.body;
+
+    const transaction = await db.orm.public.Transaction
+      .where({ id: Number(id) })
+      .update({
+        amount,
+        type,
+        category,
+        description,
+        date,
+        userId
+      });
+
+    res.json({
+      message: 'Transaction updated successfully',
+      transaction
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to update transaction'
+    });
+  }
+  
+});
+app.delete('/api/transactions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.orm.public.Transaction
+      .where({ id: Number(id) })
+      .delete();
+
+    res.json({
+      message: 'Transaction deleted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to delete transaction'
+    });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
