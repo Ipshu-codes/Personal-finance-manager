@@ -131,6 +131,96 @@ app.delete('/api/transactions/:id', async (req, res) => {
     });
   }
 });
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await db.orm.public.Category
+      .where({})
+      .all();
+
+    res.json({
+      message: 'Categories fetched successfully',
+      categories
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to fetch categories'
+    });
+  }
+});
+app.post('/api/categories', async (req, res) => {
+  try {
+    const {
+      name,
+      type,
+      userId
+    } = req.body;
+
+    const category = await db.orm.public.Category
+      .create({
+        name,
+        type,
+        userId
+      });
+
+    res.status(201).json({
+      message: 'Category created successfully',
+      category
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to create category'
+    });
+  }
+});
+app.put('/api/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      name,
+      type,
+      userId
+    } = req.body;
+
+    const category = await db.orm.public.Category
+      .where({ id: Number(id) })
+      .update({
+        name,
+        type,
+        userId
+      });
+
+    res.json({
+      message: 'Category updated successfully',
+      category
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to update category'
+    });
+  }
+});
+app.delete('/api/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.orm.public.Category
+      .where({ id: Number(id) })
+      .delete();
+
+    res.json({
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to delete category'
+    });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
