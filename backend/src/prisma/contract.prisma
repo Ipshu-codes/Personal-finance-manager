@@ -9,6 +9,7 @@ model User {
 
   transactions Transaction[]
   budgets      Budget[]
+  categories Category[]
 }
 
 model Transaction {
@@ -33,7 +34,13 @@ model Budget {
   userId   Int
   user     User    @relation(fields: [userId], references: [id])
 }
-
+model Category {
+  id        Int             @id @default(autoincrement())
+  name      String
+  type      TransactionType
+  userId    Int
+  user      User            @relation(fields: [userId], references: [id])
+}
 enum TransactionType {
   INCOME
   EXPENSE
