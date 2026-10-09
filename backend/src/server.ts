@@ -364,6 +364,186 @@ app.delete('/api/budgets/:id', async (req, res) => {
     });
   }
 });
+
+app.post('/api/savings-goals', async (req, res) => {
+  try {
+    const {
+      name,
+      targetAmount,
+      savedAmount = 0,
+      deadline,
+      completed = false,
+      userId
+    } = req.body;
+
+    if (
+      typeof name !== 'string' ||
+      !name.trim() ||
+      !Number.isFinite(Number(targetAmount)) ||
+      Number(targetAmount) <= 0 ||
+      !Number.isFinite(Number(savedAmount)) ||
+      Number(savedAmount) < 0 ||
+      Number(savedAmount) > Number(targetAmount) ||
+      typeof completed !== 'boolean' ||
+      !Number.isInteger(Number(userId)) ||
+      Number(userId) <= 0
+    ) {
+      return res.status(400).json({
+        message: 'Please provide valid savings goal details'
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    const goal = await db.orm.public.SavingsGoal.create({
+      name: name.trim(),
+      targetAmount: Number(targetAmount),
+      savedAmount: Number(savedAmount),
+      deadline: deadline || null,
+      completed,
+      createdAt: now,
+      updatedAt: now,
+      userId: Number(userId)
+    });
+
+    res.status(201).json({
+      message: 'Savings goal created successfully',
+      goal
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to create savings goal'
+    });
+  }
+});
+
+app.get('/api/savings-goals', async (req, res) => {
+  try {
+    const goals = await db.orm.public.SavingsGoal
+      .where({})
+      .all();
+
+    res.json({
+      message: 'Savings goals fetched successfully',
+      goals
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to fetch savings goals'
+    });
+  }
+});
+
+app.put('/api/savings-goals/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: 'Invalid savings goal ID'
+      });
+    }
+
+    const existingGoals = await db.orm.public.SavingsGoal
+      .where({ id })
+      .all();
+
+    if (existingGoals.length === 0) {
+      return res.status(404).json({
+        message: 'Savings goal not found'
+      });
+    }
+
+    const existing = existingGoals[0];
+    const {
+      name,
+      targetAmount,
+      savedAmount,
+      deadline,
+      completed
+    } = req.body;
+
+    const nextName = name ?? existing.name;
+    const nextTarget = Number(targetAmount ?? existing.targetAmount);
+    const nextSaved = Number(savedAmount ?? existing.savedAmount);
+    const nextCompleted = completed ?? existing.completed;
+
+    if (
+      typeof nextName !== 'string' ||
+      !nextName.trim() ||
+      !Number.isFinite(nextTarget) ||
+      nextTarget <= 0 ||
+      !Number.isFinite(nextSaved) ||
+      nextSaved < 0 ||
+      nextSaved > nextTarget ||
+      typeof nextCompleted !== 'boolean'
+    ) {
+      return res.status(400).json({
+        message: 'Please provide valid savings goal details'
+      });
+    }
+
+    const goal = await db.orm.public.SavingsGoal
+      .where({ id })
+      .update({
+        name: nextName.trim(),
+        targetAmount: nextTarget,
+        savedAmount: nextSaved,
+        deadline: deadline === undefined
+          ? existing.deadline
+          : deadline || null,
+        completed: nextCompleted,
+        updatedAt: new Date().toISOString()
+      });
+
+    res.json({
+      message: 'Savings goal updated successfully',
+      goal
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to update savings goal'
+    });
+  }
+});
+
+app.delete('/api/savings-goals/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: 'Invalid savings goal ID'
+      });
+    }
+
+    const existing = await db.orm.public.SavingsGoal
+      .where({ id })
+      .all();
+
+    if (existing.length === 0) {
+      return res.status(404).json({
+        message: 'Savings goal not found'
+      });
+    }
+
+    await db.orm.public.SavingsGoal
+      .where({ id })
+      .delete();
+
+    res.json({
+      message: 'Savings goal deleted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to delete savings goal'
+    });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

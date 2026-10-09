@@ -10,6 +10,7 @@ model User {
   transactions Transaction[]
   budgets      Budget[]
   categories Category[]
+  savingsGoals SavingsGoal[]
 }
 
 model Transaction {
@@ -41,7 +42,22 @@ model Category {
   userId    Int
   user      User            @relation(fields: [userId], references: [id])
 }
+
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+model SavingsGoal {
+  id           Int               @id @default(autoincrement())
+  name         String
+  targetAmount Decimal
+  savedAmount  Decimal          
+  deadline     TimestamptzString?
+  completed    Boolean           
+  createdAt    TimestamptzString @default(now())
+  updatedAt    temporal.updatedAtString()
+
+  userId       Int
+  user         User              @relation(fields: [userId], references: [id])
 }
