@@ -221,6 +221,149 @@ app.delete('/api/categories/:id', async (req, res) => {
     });
   }
 });
+
+app.post('/api/budgets', async (req, res) => {
+  try {
+    const { category, amount, month, year, userId } = req.body;
+
+    if (
+      !category ||
+      amount == null ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0 ||
+      !Number.isInteger(Number(month)) ||
+      Number(month) < 1 ||
+      Number(month) > 12 ||
+      !Number.isInteger(Number(year)) ||
+      !Number.isInteger(Number(userId))
+    ) {
+      return res.status(400).json({
+        message: 'Please provide valid budget details'
+      });
+    }
+
+    const budget = await db.orm.public.Budget.create({
+      category,
+      amount,
+      month: Number(month),
+      year: Number(year),
+      userId: Number(userId)
+    });
+
+    res.status(201).json({
+      message: 'Budget created successfully',
+      budget
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to create budget'
+    });
+  }
+});
+
+app.get('/api/budgets', async (req, res) => {
+  try {
+    const budgets = await db.orm.public.Budget
+      .where({})
+      .all();
+
+    res.json({
+      message: 'Budgets fetched successfully',
+      budgets
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to fetch budgets'
+    });
+  }
+});
+
+app.put('/api/budgets/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: 'Invalid budget ID'
+      });
+    }
+
+    const { category, amount, month, year, userId } = req.body;
+
+    const existing = await db.orm.public.Budget
+      .where({ id })
+      .all();
+
+    if (existing.length === 0) {
+      return res.status(404).json({
+        message: 'Budget not found'
+      });
+    }
+
+    const budget = await db.orm.public.Budget
+      .where({ id })
+      .update({
+        category: category ?? existing[0].category,
+        amount: amount ?? existing[0].amount,
+        month: month == null
+          ? existing[0].month
+          : Number(month),
+        year: year == null
+          ? existing[0].year
+          : Number(year),
+        userId: userId == null
+          ? existing[0].userId
+          : Number(userId)
+      });
+
+    res.json({
+      message: 'Budget updated successfully',
+      budget
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to update budget'
+    });
+  }
+});
+
+app.delete('/api/budgets/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: 'Invalid budget ID'
+      });
+    }
+
+    const existing = await db.orm.public.Budget
+      .where({ id })
+      .all();
+
+    if (existing.length === 0) {
+      return res.status(404).json({
+        message: 'Budget not found'
+      });
+    }
+
+    await db.orm.public.Budget
+      .where({ id })
+      .delete();
+
+    res.json({
+      message: 'Budget deleted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to delete budget'
+    });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
