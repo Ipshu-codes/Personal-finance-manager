@@ -1,10 +1,44 @@
 import express from 'express';
 import { db } from './prisma/db.js';
+import cors from 'cors';
 
 const app = express();
-const PORT = 5000;
 
+app.use(cors());
 app.use(express.json());
+
+const PORT = Number(process.env['PORT']) || 5000;
+
+const TRANSACTION_TYPES = ['INCOME', 'EXPENSE'];
+
+function isValidTransaction(t: {
+  amount: unknown;
+  type: unknown;
+  category: unknown;
+  date?: unknown;
+  userId: unknown;
+}) {
+  return (
+    Number.isFinite(Number(t.amount)) &&
+    Number(t.amount) > 0 &&
+    TRANSACTION_TYPES.includes(t.type as string) &&
+    typeof t.category === 'string' &&
+    t.category.trim() !== '' &&
+    (t.date == null || !Number.isNaN(Date.parse(t.date as string))) &&
+    Number.isInteger(Number(t.userId)) &&
+    Number(t.userId) > 0
+  );
+}
+
+function isValidCategory(c: { name: unknown; type: unknown; userId: unknown }) {
+  return (
+    typeof c.name === 'string' &&
+    c.name.trim() !== '' &&
+    TRANSACTION_TYPES.includes(c.type as string) &&
+    Number.isInteger(Number(c.userId)) &&
+    Number(c.userId) > 0
+  );
+}
 
 app.get('/', (req, res) => {
   res.json({ message: 'Personal Finance Manager API is running' });
@@ -39,14 +73,20 @@ app.post('/api/transactions', async (req, res) => {
       userId
     } = req.body;
 
+    if (!isValidTransaction({ amount, type, category, date, userId })) {
+      return res.status(400).json({
+        message: 'Please provide valid transaction details'
+      });
+    }
+
     const transaction = await db.orm.public.Transaction
       .create({
-        amount,
+        amount: String(Number(amount)),
         type,
-        category,
-        description,
-        date,
-        userId
+        category: category.trim(),
+        description: description || null,
+        date: date || new Date().toISOString(),
+        userId: Number(userId)
       });
 
     res.status(201).json({
@@ -79,26 +119,49 @@ app.get('/api/transactions', async (req, res) => {
 });
 app.put('/api/transactions/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
 
-    const {
-      amount,
-      type,
-      category,
-      description,
-      date,
-      userId
-    } = req.body;
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: 'Invalid transaction ID'
+      });
+    }
+
+    const existingTransactions = await db.orm.public.Transaction
+      .where({ id })
+      .all();
+
+    if (existingTransactions.length === 0) {
+      return res.status(404).json({
+        message: 'Transaction not found'
+      });
+    }
+
+    const existing = existingTransactions[0];
+    const next = {
+      amount: req.body.amount ?? existing.amount,
+      type: req.body.type ?? existing.type,
+      category: req.body.category ?? existing.category,
+      description: req.body.description === undefined
+        ? existing.description
+        : req.body.description || null,
+      date: req.body.date ?? existing.date,
+      userId: req.body.userId ?? existing.userId
+    };
+
+    if (!isValidTransaction(next)) {
+      return res.status(400).json({
+        message: 'Please provide valid transaction details'
+      });
+    }
 
     const transaction = await db.orm.public.Transaction
-      .where({ id: Number(id) })
+      .where({ id })
       .update({
-        amount,
-        type,
-        category,
-        description,
-        date,
-        userId
+        ...next,
+        amount: String(Number(next.amount)),
+        category: next.category.trim(),
+        userId: Number(next.userId)
       });
 
     res.json({
@@ -156,11 +219,17 @@ app.post('/api/categories', async (req, res) => {
       userId
     } = req.body;
 
+    if (!isValidCategory({ name, type, userId })) {
+      return res.status(400).json({
+        message: 'Please provide valid category details'
+      });
+    }
+
     const category = await db.orm.public.Category
       .create({
-        name,
+        name: name.trim(),
         type,
-        userId
+        userId: Number(userId)
       });
 
     res.status(201).json({
@@ -176,20 +245,43 @@ app.post('/api/categories', async (req, res) => {
 });
 app.put('/api/categories/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
 
-    const {
-      name,
-      type,
-      userId
-    } = req.body;
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: 'Invalid category ID'
+      });
+    }
+
+    const existingCategories = await db.orm.public.Category
+      .where({ id })
+      .all();
+
+    if (existingCategories.length === 0) {
+      return res.status(404).json({
+        message: 'Category not found'
+      });
+    }
+
+    const existing = existingCategories[0];
+    const next = {
+      name: req.body.name ?? existing.name,
+      type: req.body.type ?? existing.type,
+      userId: req.body.userId ?? existing.userId
+    };
+
+    if (!isValidCategory(next)) {
+      return res.status(400).json({
+        message: 'Please provide valid category details'
+      });
+    }
 
     const category = await db.orm.public.Category
-      .where({ id: Number(id) })
+      .where({ id })
       .update({
-        name,
-        type,
-        userId
+        name: next.name.trim(),
+        type: next.type,
+        userId: Number(next.userId)
       });
 
     res.json({
