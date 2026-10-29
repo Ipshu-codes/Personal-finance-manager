@@ -1,4 +1,14 @@
 node_modules/
+dist/
+.env
+
+.agents/
+.claude/
+.cursor/
+.devin/
+
+*.log
+npm-debug.log*
 .env
 .env.*
 !.env.example
