@@ -1,0 +1,6 @@
+/* Global theme and layout live in App.css. */
+input,
+select,
+textarea {
+  font: inherit;
+}
